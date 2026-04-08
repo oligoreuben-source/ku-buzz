@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KU Buzz - Kumi University</title>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <style>
+        /* [PASTE YOUR ORIGINAL CSS HERE - SAME AS BEFORE] */
+        :root {
+            --bg-primary: hsl(210, 20%, 98%);
+            --bg-secondary: hsl(0, 0%, 100%);
+            --text-primary: hsl(210, 15%, 20%);
+            --text-muted: hsl(210, 10%, 50%);
+            --primary: hsl(210, 70%, 45%);
+            --secondary: hsl(45, 85%, 55%);
+            --highlight: hsl(0, 80%, 55%);
+            --shadow: 0 4px 20px hsl(210, 20%, 20%, 0.1);
+            --border: hsl(210, 20%, 85%);
+            --radius: 16px;
+        }
+        [data-theme="dark"] {
+            --bg-primary: hsl(210, 15%, 12%);
+            --bg-secondary: hsl(210, 15%, 18%);
+            --text-primary: hsl(210, 20%, 90%);
+            --text-muted: hsl(210, 10%, 60%);
+            --shadow: 0 20px 40px hsl(210, 30%, 10%, 0.4);
+            --border: hsl(210, 15%, 25%);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-primary); color: var(--text-primary); line-height: 1.6;
+        }
+        /* [ALL YOUR ORIGINAL CSS STYLES HERE - ticker, header, cards, etc.] */
+        .subscriber-count {
+            background: var(--highlight); color: white; padding: 0.5rem 1rem;
+            border-radius: 20px; font-weight: 700; margin-left: 1rem;
+        }
+        .admin-only { display: none; }
+        .admin-panel { 
+            position: fixed; top: 20px; right: 20px; background: var(--bg-secondary);
+            padding: 1rem; border-radius: var(--radius); box-shadow: var(--shadow);
+            z-index: 1000; width: 350px; max-height: 80vh; overflow-y: auto;
+        }
+        .admin-panel h3 { margin-bottom: 1rem; color: var(--primary); }
+        .subscriber-stats { 
+            background: var(--highlight); color: white; padding: 1rem; 
+            border-radius: 12px; margin-bottom: 1rem; text-align: center;
+        }
+        .post-form { display: flex; flex-direction: column; gap: 1rem; }
+        .post-form input, .post-form textarea, .post-form select { 
+            padding: 0.75rem; border: 2px solid var(--border); border-radius: 8px;
+            background: var(--bg-primary); color: var(--text-primary);
+        }
+        .delete-btn { background: #ef4444; color: white; border: none; padding: 0.5rem;
+            border-radius: 6px; cursor: pointer; margin-left: 0.5rem; }
+    </style>
+</head>
+<body>
+    <!-- YOUR ORIGINAL HTML STRUCTURE -->
+    <div class="ticker">
+        <div class="ticker-content" id="ticker">
+            🚨 Loading live buzz...
+        </div>
+    </div>
+    
+    <!-- [YOUR ORIGINAL HEADER, HERO, SECTIONS] -->
+    <header class="header">
+        <nav class="nav">
+            <div class="logo">KU Buzz</div>
+            <ul class="nav-links"><!-- nav links --></ul>
+            <div class="header-actions">
+                <div class="subscriber-count" id="subscriberCount">Loading...</div>
+                <button class="notif-bell" id="notifBell">🔔</button>
+                <button class="theme-toggle" id="themeToggle">🌙</button>
+            </div>
+        </nav>
+    </header>
+
+    <div class="container">
+        <!-- [YOUR ORIGINAL CONTENT SECTIONS] -->
+        <section class="section">
+            <h2>🔥 Live Feed <span id="liveCount">(0)</span></h2>
+            <div class="cards-grid" id="postsContainer"></div>
+        </section>
+    </div>
+
+    <!-- ADMIN PANEL (Hidden until login) -->
+    <div class="admin-panel" id="adminPanel">
+        <h3>👑 Admin Control</h3>
+        <div class="subscriber-stats">
+            <div id="totalSubs">0</div>
+            <div>Students Subscribed</div>
+            <div id="onlineCount">0 Online</div>
+        </div>
+        
+        <form class="post-form" id="newPostForm">
+            <input type="text" id="postTitle" placeholder="Post Title">
+            <textarea id="postContent" rows="3" placeholder="What's buzzing?"></textarea>
+            <select id="postCategory">
+                <option>Live Buzz</option>
+                <option>Trending</option>
+                <option>Campus Story</option>
+            </select>
+            <button type="submit">🚀 Post Live</button>
+        </form>
+
+        <h4>Manage Posts</h4>
+        <div id="postsList"></div>
+    </div>
+
+    <script>
+        // 🔥 FIREBASE CONFIG (Get FREE from Firebase Console)
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT.firebaseapp.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT.appspot.com",
+            messagingSenderId: "123456789",
+            appId: "YOUR_APP_ID"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const auth = firebase.auth();
+
+        class KUBuzzAdmin {
+            constructor() {
+                this.isAdmin = false;
+                this.subscribers = 0;
+                this.onlineUsers = 0;
+                this.init();
+            }
+
+            async init() {
+                await this.checkAdmin();
+                this.listenToPosts();
+                this.listenToStats();
+                this.bindEvents();
+                this.liveTicker();
+            }
+
+            async checkAdmin() {
+                // Simple admin login (change password!)
+                const pin = prompt('Admin PIN (for posting):');
+                if (pin === 'kumi2024') {  // CHANGE THIS PASSWORD!
+                    this.isAdmin = true;
+                    document.getElementById('adminPanel').style.display = 'block';
+                    alert('✅ Admin access granted!');
+                }
+            }
+
+            listenToPosts() {
+                db.collection('buzz').orderBy('timestamp', 'desc').limit(10)
+                    .onSnapshot(snapshot => {
+                        const postsContainer = document.getElementById('postsContainer');
+                        postsContainer.innerHTML = '';
+                        
+                        snapshot.forEach(doc => {
+                            const post = doc.data();
+                            const postEl = this.createPostElement(post, doc.id);
+                            postsContainer.appendChild(postEl);
+                        });
+                        
+                        document.getElementById('liveCount').textContent = `(${snapshot.size})`;
+                    });
+            }
+
+            createPostElement(post, docId) {
+                const div = document.createElement('div');
+                div.className = 'card' + (post.trending ? ' trending' : '');
+                div.innerHTML = `
+                    <div class="card-header">
+                        <h3 class="card-title">${post.title}</h3>
+                        <span class="card-meta">${post.category} • ${new Date(post.timestamp.toDate()).toLocaleString()}</span>
+                    </div>
+                    <p>${post.content}</p>
+                    <div class="reactions">
+                        <button class="reaction-btn">😂 ${post.laughs || 0}</button>
+                        <button class="reaction-btn">😲 ${post.surprised || 0}</button>
+                        <button class="reaction-btn">👍 ${post.likes || 0}</button>
+                    </div>
+                    ${this.isAdmin ? `<button class="delete-btn" onclick="app.deletePost('${docId}')">🗑️ Delete</button>` : ''}
+                `;
+                return div;
+            }
+
+            listenToStats() {
+                // Real-time subscriber count
+                db.collection('subscribers').onSnapshot(snap => {
+                    this.subscribers = snap.size;
+                    document.getElementById('subscriberCount').textContent = `${this.subscribers} Students`;
+                    document.getElementById('totalSubs').textContent = this.subscribers;
+                });
+
+                // Online users
+                db.collection('online').onSnapshot(snap => {
+                    this.onlineUsers = snap.size;
+                    document.getElementById('onlineCount').textContent = `${this.onlineUsers} Online`;
+                });
+            }
+
+            bindEvents() {
+                // New post form
+                document.getElementById('newPostForm').onsubmit = async (e) => {
+                    e.preventDefault();
+                    const title = document.getElementById('postTitle').value;
+                    const content = document.getElementById('postContent').value;
+                    const category = document.getElementById('postCategory').value;
+
+                    await db.collection('buzz').add({
+                        title, content, category,
+                        laughs: 0, surprised: 0, likes: 0,
+                        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                        trending: category === 'Trending'
+                    });
+
+                    alert('✅ Posted LIVE!');
+                    e.target.reset();
+                };
+
+                // Theme toggle, notifications, etc.
+                document.getElementById('themeToggle').onclick = () => {
+                    document.documentElement.toggleAttribute('data-theme');
+                };
+            }
+
+            async deletePost(docId) {
+                if (confirm('Delete this post?')) {
+                    await db.collection('buzz').doc(docId).delete();
+                    alert('🗑️ Deleted!');
+                }
+            }
+
+            liveTicker() {
+                db.collection('buzz').orderBy('timestamp', 'desc').limit(1)
+                    .onSnapshot(snap => {
+                        if (snap.docs.length > 0) {
+                            const latest = snap.docs[0].data();
+                            document.getElementById('ticker').textContent = 
+                                `🚨 LATEST: ${latest.title} - ${latest.category}`;
+                        }
+                    });
+            }
+        }
+
+        // Global app instance
+        const app = new KUBuzzAdmin();
+
+        // Track online users
+        db.collection('online').add({ timestamp: firebase.firestore.FieldValue.serverTimestamp() });
+        setTimeout(() => {
+            db.collection('online').where('timestamp', '>', new Date(Date.now() - 30000)).get()
+                .then(() => {}); // Cleanup inactive
+        }, 30000);
+    </script>
+</body>
+</html>

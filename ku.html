@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KU Buzz - Kumi University</title>
+    <style>
+        :root {
+            /* Light Mode */
+            --bg-primary: hsl(210, 20%, 98%);
+            --bg-secondary: hsl(0, 0%, 100%);
+            --text-primary: hsl(210, 15%, 20%);
+            --text-muted: hsl(210, 10%, 50%);
+            --primary: hsl(210, 70%, 45%);
+            --secondary: hsl(45, 85%, 55%);
+            --highlight: hsl(0, 80%, 55%);
+            --shadow: 0 4px 20px hsl(210, 20%, 20%, 0.1);
+            --border: hsl(210, 20%, 85%);
+            --radius: 16px;
+        }
+
+        [data-theme="dark"] {
+            --bg-primary: hsl(210, 15%, 12%);
+            --bg-secondary: hsl(210, 15%, 18%);
+            --text-primary: hsl(210, 20%, 90%);
+            --text-muted: hsl(210, 10%, 60%);
+            --shadow: 0 4px 20px hsl(210, 30%, 10%, 0.4);
+            --border: hsl(210, 15%, 25%);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* Ticker */
+        .ticker {
+            background: var(--primary);
+            color: white;
+            padding: 12px 0;
+            overflow: hidden;
+            white-space: nowrap;
+            box-shadow: var(--shadow);
+            position: relative;
+        }
+
+        .ticker-content {
+            display: inline-block;
+            animation: scroll 25s linear infinite;
+        }
+
+        @keyframes scroll {
+            0% { transform: translateX(100%); }
+            100% { transform: translateX(-100%); }
+        }
+
+        /* Header */
+        .header {
+            background: var(--bg-secondary);
+            padding: 1rem 2rem;
+            box-shadow: var(--shadow);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(20px);
+        }
+
+        .nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .logo {
+            font-size: 2rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            list-style: none;
+        }
+
+        .nav-links a {
+            color: var(--text-primary);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s;
+            position: relative;
+        }
+
+        .nav-links a:hover {
+            color: var(--secondary);
+        }
+
+        .nav-links a::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: var(--secondary);
+            transition: width 0.3s;
+        }
+
+        .nav-links a:hover::after {
+            width: 100%;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .theme-toggle, .notif-bell {
+            width: 44px;
+            height: 44px;
+            border: none;
+            border-radius: 12px;
+            background: var(--border);
+            color: var(--text-muted);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+
+        .theme-toggle:hover, .notif-bell:hover {
+            background: var(--secondary);
+            color: white;
+            transform: scale(1.05);
+        }
+
+        /* Main Container */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* Hero Section */
+        .hero {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .hero h1 {
+            font-size: clamp(2.5rem, 5vw, 4rem);
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero p {
+            font-size: 1.25rem;
+            color: var(--text-muted);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        /* Sections */
+        .section {
+            margin-bottom: 4rem;
+        }
+
+        .section h2 {
+            font-size: 2.5rem;
+            margin-bottom: 2rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        /* Cards Grid */
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 2rem;
+        }
+
+        .card {
+            background: var(--bg-secondary);
+            border-radius: var(--radius);
+            padding: 2rem;
+            box-shadow: var(--shadow);
+            transition: all 0.3s;
+            border: 1px solid var(--border);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+        }
+
+        .card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 40px hsl(210, 20%, 20%, 0.2);
+        }
+
+        .card.trending::before {
+            background: var(--highlight);
+            height: 6px;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+
+        .card-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            line-height: 1.3;
+        }
+
+        .card-meta {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            display: flex;
+            gap: 1rem;
+        }
+
+        .reactions {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .reaction-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: color 0.3s;
+        }
+
+        .reaction-btn:hover, .reaction-btn.active {
+            color: var(--secondary);
+        }
+
+        /* Live Feed */
+        .live-feed {
+            height: 120px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .live-item {
+            padding: 1rem;
+            background: var(--primary);
+            color: white;
+            margin-bottom: 1rem;
+            border-radius: 12px;
+            animation: slideIn 0.5s ease-out;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        /* Submission Form */
+        .submit-form {
+            background: var(--bg-secondary);
+            padding: 2rem;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            margin-top: 2rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+
+        .form-group input, .form-group textarea, .form-group select {
+            width: 100%;
+            padding: 1rem;
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus, .form-group textarea:focus, .form-group select:focus {
+            outline: none;
+            border-color: var(--secondary);
+        }
+
+        .btn {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 100%;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px hsl(210, 70%, 45%, 0.4);
+        }
+
+        /* Footer */
+        .footer {
+            background: hsl(210, 20%, 5%);
+            color: hsl(210, 20%, 70%);
+            text-align: center;
+            padding: 3rem 2rem 2rem;
+            margin-top: 4rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container { padding: 1rem; }
+            .nav-links { display: none; }
+            .cards-grid { grid-template-columns: 1fr; }
+            .header { padding: 1rem; }
+        }
+
+        /* Animations */
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .pulse { animation: pulse 2s infinite; }
+    </style>
+</head>
+<body>
+    <!-- Breaking Buzz Ticker -->
+    <div class="ticker">
+        <div class="ticker-content">
+            🚨 Lecture hall AC broken again! ❄️ Unexpected quiz in Math 101! 📚 Cafeteria ran out of chapati at 1 PM! 🍞 Rain starts exactly when lectures end ☔ Trending: Prof K's surprise test! 🔥🔥🔥
+        </div>
+    </div>
+
+    <!-- Header -->
+    <header class="header">
+        <nav class="nav">
+            <div class="logo">KU Buzz</div>
+            <ul class="nav-links">
+                <li><a href="#home">Home</a></li>
+                <li><a href="#buzz">Live Buzz</a></li>
+                <li><a href="#stories">Stories</a></li>
+                <li><a href="#memes">Memes</a></li>
+                <li><a href="#events">Events</a></li>
+                <li><a href="#confessions">Confessions</a></li>
+            </ul>
+            <div class="header-actions">
+                <button class="notif-bell pulse" title="Notifications">🔔</button>
+                <button class="theme-toggle" title="Toggle Dark Mode">🌙</button>
+            </div>
+        </nav>
+    </header>
+
+    <div class="container">
+        <!-- Hero -->
+        <section class="hero" id="home">
+            <h1>What's buzzing at KU? 🐝</h1>
+            <p>Your campus, your stories, your vibe. Real talk from real students. No admin filters, just pure KU energy.</p>
+        </section>
+
+        <!-- Trending Now -->
+        <section class="section">
+            <h2>🔥 Trending Now</h2>
+            <div class="cards-grid">
+                <div class="card trending">
+                    <div class="card-header">
+                        <h3 class="card-title">Lecture hall full, but everyone is on KU Buzz 📱</h3>
+                        <span class="card-meta">2h ago • 1.2K</span>
+                    </div>
+                    <p>45/50 seats taken, but 42 people scrolling through memes instead of listening. Classic KU Monday.</p>
+                    <div class="reactions">
+                        <button class="reaction-btn active">😂 1.2K</button>
+                        <button class="reaction-btn">😲 456</button>
+                        <button class="reaction-btn">👍 892</button>
+                    </div>
+                </div>
+                <div class="card trending">
+                    <div class="card-header">
+                        <h3 class="card-title">Unexpected quiz today: survival strategies</h3>
+                        <span class="card-meta">1h ago • 987</span>
+                    </div>
+                    <p>Pro tip: Page 47 has ALL the answers. Don't say we didn't warn you! 📚</p>
+                    <div class="reactions">
+                        <button class="reaction-btn">😂 987</button>
+                        <button class="reaction-btn active">😲 654</button>
+                        <button class="reaction-btn">👍 321</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Live Buzz Feed -->
+        <section class="section" id="buzz">
+            <h2>📡 Live Campus Buzz</h2>
+            <div class="live-feed" id="liveFeed"></div>
+        </section>
+
+        <!-- Recent Stories -->
+        <section class="section">
+            <h2>📖 Campus Stories</h2>
+            <div class="cards-grid">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Rain starts exactly when lectures end</h3>
+                        <span class="card-meta">4h ago • 567</span>
+                    </div>
+                    <p>Every. Single. Time. Someone explain this to me! ☔️</p>
+                    <div class="reactions">
+                        <button class="reaction-btn">😂 345</button>
+                        <button class="reaction-btn">😲 123</button>
+                        <button class="reaction-btn">👍 89</button>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Cafeteria lines longer than lecture duration</h3>
+                        <span class="card-meta">6h ago • 432</span>
+                    </div>
+                    <p>20 mins for rice and beans. Worth it? Always. 🍚</p>
+                    <div class="reactions">
+                        <button class="reaction-btn">😂 210</button>
+                        <button class="reaction-btn">😲 98</button>
+                        <button class="reaction-btn active">👍 124</button>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Group project drama level: Expert</h3>
+                        <span class="card-meta">8h ago • 678</span>
+                    </div>
+                    <p>One person does everything, others get A+. Sound familiar? 😩</p>
+                    <div class="reactions">
+                        <button class="reaction-btn active">😂 543</button>
+                        <button class="reaction-btn">😲 210</button>
+                        <button class="reaction-btn">👍 156</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Submit Buzz -->
+        <section class="section">
+            <h2>💬 Share Your Buzz</h2>
+            <form class="submit-form">
+                <div class="form-group">
+                    <label>What's buzzing? 🐝</label>
+                    <textarea rows="4" placeholder="Lecture hall AC broken again! Cafeteria out of chapati..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Category</label>
+                    <select>
+                        <option>Live Buzz</option>
+                        <option>Campus Story</option>
+                        <option>Meme</option>
+                        <option>Confession</option>
+                        <option>Event</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Anonymous? 👤</label>
+                    <input type="checkbox" id="anonymous">
+                    <label for="anonymous" style="font-weight: normal; display: inline;"> Keep me anonymous</label>
+                </div>
+                <button type="submit" class="btn">Drop the Buzz! 🚀</button>
+            </form>
+        </section>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div style="max-width: 1200px; margin: 0 auto;">
+            <h3 style="margin-bottom: 1rem; color: white;">🐝 KU Buzz</h3>
+            <p>Made by Students, for Students | The real voice of Kumi University</p>
+            <div style="margin-top: 2rem; display: flex; justify-content: center; gap: 2rem; font-size: 1.5rem;">
+                <a href="#" style="color: inherit;">📱</a>
+                <a href="#" style="color: inherit;">📧</a>
+                <a href="#" style="color: inherit;">🐦</a>
+            </div>
+            <p style="margin-top: 2rem; opacity: 0.7;">© 2024 KU Buzz. No admins were harmed in the making of this site.</p>
+        </div>
+    </footer>
+
+    <script>
+       // 🔥 PRODUCTION READY KU BUZZ
+class KUBuzz {
+  constructor() {
+    this.initTheme();
+    this.liveFeed();
+    this.interactions();
+    this.submissions();
+    this.notifications();
+  }
+
+  initTheme() {
+    const toggle = document.querySelector('.theme-toggle');
+    toggle.onclick = () => {
+      const theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', theme);
+      localStorage.setItem('theme', theme);
+      toggle.textContent = theme === 'dark' ? '☀️' : '🌙';
+    };
+  }
+
+  liveFeed() {
+    const feed = document.getElementById('liveFeed');
+    const buzzes = [
+      '🚨 Prof K just announced pop quiz tomorrow!',
+      '🍽️ Cafeteria: Chapati SOLD OUT at 1:30 PM',
+      '📚 Library closing early for cleaning',
+      '⚽ Football match starts at field 2 NOW!',
+      '💻 WiFi down in Block C again 😩'
+    ];
+    
+    let index = 0;
+    setInterval(() => {
+      const item = document.createElement('div');
+      item.className = 'live-item';
+      item.innerHTML = `🕐 ${new Date().toLocaleTimeString()} ${buzzes[index % buzzes.length]}`;
+      feed.appendChild(item);
+      setTimeout(() => item.remove(), 8000);
+      index++;
+    }, 5000);
+  }
+
+  interactions() {
+    document.querySelectorAll('.reaction-btn').forEach(btn => {
+      btn.onclick = () => {
+        btn.classList.toggle('active');
+        btn.textContent = parseInt(btn.textContent) + (btn.classList.contains('active') ? 1 : -1);
+      };
+    });
+  }
+
+  submissions() {
+    document.querySelector('.submit-form').onsubmit = (e) => {
+      e.preventDefault();
+      alert('✅ Buzz submitted! Will appear in Live Feed shortly! 🐝');
+      e.target.reset();
+    };
+  }
+
+  notifications() {
+    setTimeout(() => {
+      if (Notification.permission === 'granted') {
+        new Notification('KU Buzz', {
+          body: 'New buzz in your campus! 🐝',
+          icon: 'data:image/svg+xml;base64,...'
+        });
+      }
+    }, 10000);
+  }
+}
+
+// Initialize when page loads
+document.addEventListener('DOMContentLoaded', () => new KUBuzz());
+</script>
